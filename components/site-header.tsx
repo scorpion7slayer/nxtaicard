@@ -4,6 +4,7 @@ import {
   Activity,
   ChevronDown,
   ChevronLeft,
+  Coffee,
   ExternalLink,
   Info,
   List,
@@ -109,7 +110,7 @@ export function SiteHeader({ backHref, modelCount }: SiteHeaderProps) {
               {t.nav.about}
             </Link>
 
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
@@ -118,7 +119,10 @@ export function SiteHeader({ backHref, modelCount }: SiteHeaderProps) {
                 >
                   <PanelsTopLeft data-icon="inline-start" />
                   {t.nav.otherBenchmarks}
-                  <ChevronDown data-icon="inline-end" />
+                  <ChevronDown
+                    data-icon="inline-end"
+                    className="transition-transform duration-150 ease-out group-data-[state=open]/button:rotate-180 motion-reduce:transition-none"
+                  />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" sideOffset={8} className="w-56">
@@ -139,7 +143,7 @@ export function SiteHeader({ backHref, modelCount }: SiteHeaderProps) {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
@@ -147,7 +151,10 @@ export function SiteHeader({ backHref, modelCount }: SiteHeaderProps) {
                   className="h-8 px-1.5 text-xs font-normal text-muted-foreground"
                 >
                   {t.nav.dataSources}
-                  <ChevronDown data-icon="inline-end" />
+                  <ChevronDown
+                    data-icon="inline-end"
+                    className="transition-transform duration-150 ease-out group-data-[state=open]/button:rotate-180 motion-reduce:transition-none"
+                  />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" sideOffset={8} className="w-56">
@@ -175,6 +182,15 @@ export function SiteHeader({ backHref, modelCount }: SiteHeaderProps) {
             </DropdownMenu>
 
             <div className="w-px h-4 bg-border mx-1" />
+            <a
+              href="https://buymeacoffee.com/scorpion7slayer"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex min-h-8 items-center gap-1 rounded-md px-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+            >
+              <Coffee className="size-3" />
+              {t.nav.buyMeACoffee}
+            </a>
             <a
               href="https://github.com/scorpion7slayer/benchsift/issues"
               target="_blank"
@@ -297,6 +313,16 @@ export function SiteHeader({ backHref, modelCount }: SiteHeaderProps) {
           </a>
 
           <Separator className="my-1" />
+          <a
+            href="https://buymeacoffee.com/scorpion7slayer"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex min-h-11 items-center gap-2 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+            onClick={() => setMenuOpen(false)}
+          >
+            <Coffee className="size-4 shrink-0" />
+            {t.nav.buyMeACoffee}
+          </a>
           <a
             href="https://github.com/scorpion7slayer/benchsift/issues"
             target="_blank"

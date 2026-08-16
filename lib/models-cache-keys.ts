@@ -11,6 +11,7 @@
 // Reads tolerate older entries because every field added to LLMModel is
 // optional — missing fields just render as undefined.
 export const MODELS_KEYS = [
+  "benchsift:models:v2",
   "benchsift:models:v1",
   "nxtaicard:models:v13",
   "nxtaicard:models:v3",

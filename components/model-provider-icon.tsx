@@ -103,6 +103,7 @@ const PROVIDER_ICON_LOADERS: Record<string, ProviderIconLoader> = {
   tii: iconLoader(() => import("@lobehub/icons/es/TII")),
   upstage: iconLoader(() => import("@lobehub/icons/es/Upstage"), "color"),
   vidu: iconLoader(() => import("@lobehub/icons/es/Vidu"), "avatar"),
+  voyage: iconLoader(() => import("@lobehub/icons/es/Voyage"), "color"),
   xai: iconLoader(() => import("@lobehub/icons/es/XAI")),
   xiaomimimo: iconLoader(() => import("@lobehub/icons/es/XiaomiMiMo")),
   zai: iconLoader(() => import("@lobehub/icons/es/ZAI"), "avatar"),

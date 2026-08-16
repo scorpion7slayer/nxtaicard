@@ -1,6 +1,7 @@
 import "@tanstack/react-start/server-only";
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { LLMModel } from "@/lib/api";
 import {
@@ -117,6 +118,7 @@ export async function writeModelsCache(
   stats?: Record<string, number>,
 ): Promise<void> {
   const cacheFile = getCacheFilePath();
+  const temporaryFile = `${cacheFile}.${process.pid}.${randomUUID()}.tmp`;
   const entry: ModelsCacheEntry = {
     key: MODELS_WRITE_KEY,
     models,
@@ -124,7 +126,13 @@ export async function writeModelsCache(
     ...(stats ? { stats } : {}),
   };
   await mkdir(path.dirname(cacheFile), { recursive: true });
-  await writeFile(cacheFile, JSON.stringify(entry), "utf8");
+  try {
+    await writeFile(temporaryFile, JSON.stringify(entry), "utf8");
+    await rename(temporaryFile, cacheFile);
+  } catch (error) {
+    await rm(temporaryFile, { force: true }).catch(() => undefined);
+    throw error;
+  }
 }
 
 /**

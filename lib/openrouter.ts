@@ -75,6 +75,7 @@ export interface OpenRouterModel {
     artificial_analysis?: {
       intelligence_index?: number;
       coding_index?: number;
+      math_index?: number;
       agentic_index?: number;
     };
   };
@@ -604,6 +605,12 @@ function mergeOpenRouterData(
       typeof aa.coding_index === "number"
     ) {
       evaluations.artificial_analysis_coding_index = aa.coding_index;
+    }
+    if (
+      evaluations.artificial_analysis_math_index == null &&
+      typeof aa.math_index === "number"
+    ) {
+      evaluations.artificial_analysis_math_index = aa.math_index;
     }
     if (evaluations.agentic_index == null && typeof aa.agentic_index === "number") {
       evaluations.agentic_index = aa.agentic_index;

@@ -25,7 +25,7 @@ import {
   matchesSearch,
   matchesWeightAccess,
   sortHomeModels,
-  sortNerdModels,
+  sortAdvancedModels,
   type CategoryFilter,
   type NormalRankingKey,
   type SortKey,
@@ -43,7 +43,7 @@ const ModelCard = lazy(() =>
   })),
 );
 
-type ViewMode = "normal" | "nerd";
+type ViewMode = "normal" | "advanced";
 
 const NORMAL_RANKING_OPTIONS = [
   { value: "intelligence", label: "general" },
@@ -271,11 +271,11 @@ export function ModelGrid({ models }: { models: HomeCatalogModel[] }) {
   const [visibleCount, setVisibleCount] = useState(BATCH);
   const [gridKey, setGridKey] = useState(0);
   const [gridMotion, setGridMotion] = useState<GridMotion>("filter");
-  const [nerdModels, setNerdModels] = useState<LLMModel[] | null>(null);
-  const [nerdLoading, setNerdLoading] = useState(false);
-  const [nerdLoadError, setNerdLoadError] = useState(false);
-  const [nerdLoadAttempt, setNerdLoadAttempt] = useState(0);
-  const nerdRequestRef = useRef<Promise<LLMModel[]> | null>(null);
+  const [advancedModels, setAdvancedModels] = useState<LLMModel[] | null>(null);
+  const [advancedLoading, setAdvancedLoading] = useState(false);
+  const [advancedLoadError, setAdvancedLoadError] = useState(false);
+  const [advancedLoadAttempt, setAdvancedLoadAttempt] = useState(0);
+  const advancedRequestRef = useRef<Promise<LLMModel[]> | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const categoryBarRef = useRef<HTMLDivElement>(null);
   const categoryButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -293,9 +293,14 @@ export function ModelGrid({ models }: { models: HomeCatalogModel[] }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
-      if (stored === "normal" || stored === "nerd") {
+      if (stored === "normal" || stored === "advanced") {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setViewMode(stored);
+      } else if (stored === "nerd") {
+        // Migrate the former visible mode name without losing the preference.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setViewMode("advanced");
+        localStorage.setItem(VIEW_MODE_STORAGE_KEY, "advanced");
       }
     } catch {
       // The default Normal mode remains available when storage is blocked.
@@ -303,34 +308,34 @@ export function ModelGrid({ models }: { models: HomeCatalogModel[] }) {
   }, []);
 
   useEffect(() => {
-    if (viewMode !== "nerd" || nerdModels) return;
+    if (viewMode !== "advanced" || advancedModels) return;
 
     let cancelled = false;
-    setNerdLoading(true);
-    setNerdLoadError(false);
+    setAdvancedLoading(true);
+    setAdvancedLoadError(false);
 
-    const request = nerdRequestRef.current ?? fetchModels();
-    nerdRequestRef.current = request;
+    const request = advancedRequestRef.current ?? fetchModels();
+    advancedRequestRef.current = request;
 
     void request
       .then((loadedModels) => {
-        if (!cancelled) setNerdModels(collapseReasoningVariants(loadedModels));
+        if (!cancelled) setAdvancedModels(collapseReasoningVariants(loadedModels));
       })
       .catch(() => {
-        nerdRequestRef.current = null;
-        if (!cancelled) setNerdLoadError(true);
+        advancedRequestRef.current = null;
+        if (!cancelled) setAdvancedLoadError(true);
       })
       .finally(() => {
-        if (!cancelled) setNerdLoading(false);
+        if (!cancelled) setAdvancedLoading(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [viewMode, nerdModels, nerdLoadAttempt]);
+  }, [viewMode, advancedModels, advancedLoadAttempt]);
 
   function changeViewMode(value: string) {
-    if (value !== "normal" && value !== "nerd") return;
+    if (value !== "normal" && value !== "advanced") return;
     setViewMode(value);
     try {
       localStorage.setItem(VIEW_MODE_STORAGE_KEY, value);
@@ -409,11 +414,11 @@ export function ModelGrid({ models }: { models: HomeCatalogModel[] }) {
     () =>
       CATEGORY_OPTIONS.reduce<Record<CategoryFilter, number>>((acc, option) => {
         acc[option.value] = option.value === "all"
-          ? (nerdModels?.length ?? 0)
-          : (nerdModels?.filter((model) => matchesCategory(model, option.value)).length ?? 0);
+          ? (advancedModels?.length ?? 0)
+          : (advancedModels?.filter((model) => matchesCategory(model, option.value)).length ?? 0);
         return acc;
       }, {} as Record<CategoryFilter, number>),
-    [nerdModels]
+    [advancedModels]
   );
 
   const [categoryIndicator, setCategoryIndicator] = useState({ left: 0, top: 0, width: 0, height: 0 });
@@ -458,14 +463,14 @@ export function ModelGrid({ models }: { models: HomeCatalogModel[] }) {
     [t.grid.sortGroups, t.grid.sorts]
   );
 
-  const nerdFiltered = useMemo(() => {
+  const advancedFiltered = useMemo(() => {
     const q = appliedQuery.toLowerCase().trim();
     let base =
       providerFilter !== "all"
-        ? (nerdModels ?? []).filter(
+        ? (advancedModels ?? []).filter(
             (m) => getCanonicalCreatorSlug(m.model_creator.slug) === providerFilter,
           )
-        : (nerdModels ?? []);
+        : (advancedModels ?? []);
     if (categoryFilter !== "all") {
       base = base.filter((m) => matchesCategory(m, categoryFilter));
     }
@@ -475,9 +480,9 @@ export function ModelGrid({ models }: { models: HomeCatalogModel[] }) {
     if (q) {
       base = base.filter((model) => matchesSearch(model, q));
     }
-    return sortNerdModels(base, sort);
+    return sortAdvancedModels(base, sort);
   }, [
-    nerdModels,
+    advancedModels,
     appliedQuery,
     sort,
     providerFilter,
@@ -510,9 +515,9 @@ export function ModelGrid({ models }: { models: HomeCatalogModel[] }) {
     });
   }, [normalRanked, appliedQuery, providerFilter, weightAccessFilter]);
 
-  const activeLength = viewMode === "normal" ? normalFiltered.length : nerdFiltered.length;
-  const activeTotal = viewMode === "normal" ? normalRanked.length : (nerdModels?.length ?? models.length);
-  const visibleModels = nerdFiltered.slice(0, visibleCount);
+  const activeLength = viewMode === "normal" ? normalFiltered.length : advancedFiltered.length;
+  const activeTotal = viewMode === "normal" ? normalRanked.length : (advancedModels?.length ?? models.length);
+  const visibleModels = advancedFiltered.slice(0, visibleCount);
   const visibleRanked = normalFiltered.slice(0, visibleCount);
   const hasMore = visibleCount < activeLength;
 
@@ -556,7 +561,7 @@ export function ModelGrid({ models }: { models: HomeCatalogModel[] }) {
           <p className="mt-0.5 text-sm">
             {viewMode === "normal"
               ? t.grid.viewModes.normalDescription
-              : t.grid.viewModes.nerdDescription}
+              : t.grid.viewModes.advancedDescription}
           </p>
         </div>
         <ToggleGroup
@@ -572,8 +577,8 @@ export function ModelGrid({ models }: { models: HomeCatalogModel[] }) {
           <ToggleGroupItem value="normal" className="touch-target flex-1 px-4 sm:min-w-24 sm:flex-none">
             {t.grid.viewModes.normal}
           </ToggleGroupItem>
-          <ToggleGroupItem value="nerd" className="touch-target flex-1 px-4 sm:min-w-24 sm:flex-none">
-            {t.grid.viewModes.nerd}
+          <ToggleGroupItem value="advanced" className="touch-target flex-1 px-4 sm:min-w-24 sm:flex-none">
+            {t.grid.viewModes.advanced}
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
@@ -698,7 +703,7 @@ export function ModelGrid({ models }: { models: HomeCatalogModel[] }) {
           withSearch
           width="w-full sm:w-52"
         />
-        {viewMode === "nerd" && (
+        {viewMode === "advanced" && (
           <Combobox
             items={sortItems}
             value={sort}
@@ -712,17 +717,17 @@ export function ModelGrid({ models }: { models: HomeCatalogModel[] }) {
           value={weightAccessFilter}
           onChange={(value) => setWeightAccessFilter(value as WeightAccessFilter)}
           placeholder={t.grid.weightAccess.label}
-          width={viewMode === "nerd" ? "col-span-full w-full sm:w-52" : "w-full sm:w-52"}
+          width={viewMode === "advanced" ? "col-span-full w-full sm:w-52" : "w-full sm:w-52"}
         />
       </div>
 
-      {viewMode === "nerd" && !nerdModels ? (
+      {viewMode === "advanced" && !advancedModels ? (
         <div
           role="status"
           aria-live="polite"
           className="flex min-h-48 flex-col items-center justify-center gap-3 rounded-xl border border-dashed bg-card/50 px-6 text-center"
         >
-          {nerdLoadError ? (
+          {advancedLoadError ? (
             <>
               <Blocks className="size-7 text-muted-foreground" />
               <div className="flex max-w-md flex-col gap-1">
@@ -734,8 +739,8 @@ export function ModelGrid({ models }: { models: HomeCatalogModel[] }) {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  nerdRequestRef.current = null;
-                  setNerdLoadAttempt((attempt) => attempt + 1);
+                  advancedRequestRef.current = null;
+                  setAdvancedLoadAttempt((attempt) => attempt + 1);
                 }}
               >
                 {t.error.retry}
@@ -743,7 +748,7 @@ export function ModelGrid({ models }: { models: HomeCatalogModel[] }) {
             </>
           ) : (
             <>
-              <Loader2 className={cn("size-5 text-muted-foreground", nerdLoading && "animate-spin")} />
+              <Loader2 className={cn("size-5 text-muted-foreground", advancedLoading && "animate-spin")} />
               <p className="text-sm text-muted-foreground">{t.grid.loadingDetails}</p>
             </>
           )}
