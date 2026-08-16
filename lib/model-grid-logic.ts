@@ -67,7 +67,7 @@ function sortablePrice(model: LLMModel): number | null {
   return prices.length > 0 ? Math.min(...prices) : null;
 }
 
-const NERD_EVALUATION_SORT_KEYS = {
+const ADVANCED_EVALUATION_SORT_KEYS = {
   intelligence: "artificial_analysis_intelligence_index",
   coding: "artificial_analysis_coding_index",
   math: "artificial_analysis_math_index",
@@ -79,7 +79,7 @@ const NERD_EVALUATION_SORT_KEYS = {
   aime_25: "aime_25",
 } as const satisfies Partial<Record<SortKey, string>>;
 
-const NERD_MODEL_COMPARATORS: Partial<Record<SortKey, ModelComparator<LLMModel>>> = {
+const ADVANCED_MODEL_COMPARATORS: Partial<Record<SortKey, ModelComparator<LLMModel>>> = {
   speed: descendingMetric((model) => model.median_output_tokens_per_second),
   ttft: ascendingMetric((model) => model.median_time_to_first_token_seconds),
   openrouter_popular: ascendingMetric((model) => model.openrouter_weekly_rank),
@@ -94,13 +94,13 @@ const NERD_MODEL_COMPARATORS: Partial<Record<SortKey, ModelComparator<LLMModel>>
   name: (left, right) => left.name.localeCompare(right.name),
 };
 
-export function sortNerdModels(models: LLMModel[], key: SortKey): LLMModel[] {
-  const evaluationKey = NERD_EVALUATION_SORT_KEYS[
-    key as keyof typeof NERD_EVALUATION_SORT_KEYS
+export function sortAdvancedModels(models: LLMModel[], key: SortKey): LLMModel[] {
+  const evaluationKey = ADVANCED_EVALUATION_SORT_KEYS[
+    key as keyof typeof ADVANCED_EVALUATION_SORT_KEYS
   ];
   const comparator = evaluationKey
     ? descendingMetric<LLMModel>((model) => textMetricValue(model, evaluationKey))
-    : NERD_MODEL_COMPARATORS[key];
+    : ADVANCED_MODEL_COMPARATORS[key];
   return comparator ? [...models].sort(comparator) : [...models];
 }
 

@@ -236,6 +236,66 @@ function mergeModel(base: LLMModel, patch: LLMModel): LLMModel {
   };
 }
 
+function mediaIdentityKey(model: LLMModel): string {
+  return [
+    getCanonicalCreatorSlug(model.model_creator.slug),
+    model.name.trim().toLocaleLowerCase().replace(/\s+/g, " "),
+  ].join(":");
+}
+
+function canonicalMediaSlugScore(model: LLMModel): number {
+  const expected = slugify(model.name);
+  if (model.slug === expected) return 0;
+  if (model.slug.endsWith(expected)) return 1;
+  return 2 + model.slug.length / 1_000;
+}
+
+function isAAMediaModel(model: LLMModel): boolean {
+  return Object.entries(model.evaluations).some(
+    ([key, value]) =>
+      key.startsWith("artificial_analysis_media_") && value != null,
+  ) || (
+    model.output_modality_text !== true &&
+    (
+      model.output_modality_image === true ||
+      model.output_modality_video === true ||
+      model.output_modality_speech === true
+    )
+  );
+}
+
+/**
+ * Merges split AA media rows during both live ingestion and historical-cache
+ * reads. Non-media rows are deliberately left untouched.
+ */
+export function mergeAAMediaDuplicateModels(models: LLMModel[]): LLMModel[] {
+  const grouped = new Map<string, number>();
+  const merged: LLMModel[] = [];
+  for (const model of models) {
+    if (!isAAMediaModel(model)) {
+      merged.push(model);
+      continue;
+    }
+
+    const key = mediaIdentityKey(model);
+    const existingIndex = grouped.get(key);
+    if (existingIndex === undefined) {
+      grouped.set(key, merged.length);
+      merged.push(model);
+      continue;
+    }
+
+    const existing = merged[existingIndex];
+    const modelIsCanonical =
+      canonicalMediaSlugScore(model) < canonicalMediaSlugScore(existing);
+    merged[existingIndex] =
+      modelIsCanonical
+        ? mergeModel(model, existing)
+        : mergeModel(existing, model);
+  }
+  return merged;
+}
+
 export function mergeAAMediaModels(
   models: LLMModel[],
   mediaModels: LLMModel[],
@@ -245,7 +305,7 @@ export function mergeAAMediaModels(
   const bySlug = new Map<string, LLMModel>();
   for (const model of models) bySlug.set(model.slug, model);
 
-  for (const mediaModel of mediaModels) {
+  for (const mediaModel of mergeAAMediaDuplicateModels(mediaModels)) {
     const existing = bySlug.get(mediaModel.slug);
     bySlug.set(
       mediaModel.slug,

@@ -1,7 +1,7 @@
 # Dokploy Deployment Notes
 
 This branch removes the Cloudflare Worker/Wrangler runtime and targets Dokploy
-as a single-container Node application.
+as a single-container Bun application.
 
 ## Recommended Service Type
 
@@ -28,7 +28,7 @@ ARTIFICIAL_ANALYSIS_FALLBACK_API_KEY_4=
 OPENROUTER_API_KEY=
 HUGGINGFACE_API_KEY=
 CRON_SECRET=
-MODELS_CACHE_FILE=.data/models-cache.json
+MODELS_CACHE_FILE=/app/.data/models-cache.json
 # Optional: default is 1800000 (30 minutes)
 REFRESH_CACHE_TIMEOUT_MS=1800000
 ```
@@ -43,12 +43,24 @@ The former Cloudflare KV cache is now a JSON file. Add a Dokploy volume mount:
 Without this mount the app still works, but the cache is lost on redeploy and
 the first requests after a cold start may do more upstream work.
 
+Use one stable named volume attached to the Application across releases. Do not
+replace it with an anonymous or release-specific volume: that makes the visible
+model count fall back to the cold-start catalogue until the next full refresh.
+Cache replacement is atomic, so stopping a container during a refresh keeps the
+last complete JSON file instead of exposing a partially written catalogue to
+the next version.
+
+After a deployment, check `/health`: `catalog.models` should remain populated
+immediately and `catalog.refreshedAt` should predate the new container when no
+scheduled refresh has run yet. A reset timestamp or a temporarily smaller count
+indicates that `/app/.data` is not reusing the intended volume.
+
 ## Schedule Job
 
 Create a Dokploy **Application Schedule Job** for the running app container:
 
 ```bash
-npm run refresh-cache
+bun run refresh-cache
 ```
 
 The command calls `POST /api/cron/refresh` locally with `CRON_SECRET`, so no
@@ -61,9 +73,9 @@ cron behavior:
 
 Dokploy requires the target container to be running for Application Schedule
 Jobs. The Docker image installs `bash` because Dokploy executes the command in
-the running container through `bash -c`. The `refresh-cache` script uses Node's
-HTTP client with a configurable timeout because the full upstream refresh can
-take longer than Node fetch's default header timeout.
+the running container through `bash -c`. The `refresh-cache` script uses the
+Node-compatible HTTP client provided by Bun with a configurable timeout because
+the full upstream refresh can take longer than the default request timeout.
 
 A complete refresh should report a JSON response with source counters, for
 example:

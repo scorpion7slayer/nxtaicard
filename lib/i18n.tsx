@@ -15,6 +15,7 @@ export interface Translations {
     otherBenchmarks: string;
     dataSources: string;
     huggingFace: string;
+    buyMeACoffee: string;
   };
   hero: {
     title: string;
@@ -57,8 +58,8 @@ export interface Translations {
       label: string;
       normal: string;
       normalDescription: string;
-      nerd: string;
-      nerdDescription: string;
+      advanced: string;
+      advancedDescription: string;
     };
     ranking: {
       label: string;
@@ -420,6 +421,7 @@ const T: Record<Lang, Translations> = {
       otherBenchmarks: "Autres benchmarks",
       dataSources: "Sources de données",
       huggingFace: "Hugging Face",
+      buyMeACoffee: "Offrir un café",
     },
     hero: {
       title: "Modèles d'IA",
@@ -444,7 +446,7 @@ const T: Record<Lang, Translations> = {
         },
         {
           title: "Le détail reste disponible",
-          description: "Le mode Nerd conserve les benchmarks, prix, vitesses et capacités pour celles et ceux qui veulent vérifier plus loin.",
+          description: "Le mode Advanced conserve les benchmarks, prix, vitesses et capacités pour celles et ceux qui veulent vérifier plus loin.",
         },
         {
           title: "Plusieurs sources, une seule fiche",
@@ -479,8 +481,8 @@ const T: Record<Lang, Translations> = {
         label: "Niveau de détail",
         normal: "Normal",
         normalDescription: "Un classement simple, sans scores ni benchmarks.",
-        nerd: "Nerd",
-        nerdDescription: "Tous les benchmarks, performances, prix et détails.",
+        advanced: "Advanced",
+        advancedDescription: "Tous les benchmarks, performances, prix et détails.",
       },
       ranking: {
         label: "Classer par",
@@ -854,6 +856,7 @@ const T: Record<Lang, Translations> = {
       otherBenchmarks: "Other benchmarks",
       dataSources: "Data sources",
       huggingFace: "Hugging Face",
+      buyMeACoffee: "Buy me a coffee",
     },
     hero: {
       title: "AI Models",
@@ -878,7 +881,7 @@ const T: Record<Lang, Translations> = {
         },
         {
           title: "The detail remains available",
-          description: "Nerd mode keeps benchmarks, pricing, speed, and capabilities for people who want to investigate further.",
+          description: "Advanced mode keeps benchmarks, pricing, speed, and capabilities for people who want to investigate further.",
         },
         {
           title: "Several sources, one profile",
@@ -913,8 +916,8 @@ const T: Record<Lang, Translations> = {
         label: "Level of detail",
         normal: "Normal",
         normalDescription: "A simple ranking without scores or benchmarks.",
-        nerd: "Nerd",
-        nerdDescription: "Every benchmark, performance metric, price and detail.",
+        advanced: "Advanced",
+        advancedDescription: "Every benchmark, performance metric, price and detail.",
       },
       ranking: {
         label: "Rank by",

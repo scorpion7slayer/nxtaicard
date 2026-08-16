@@ -27,7 +27,7 @@ file, so keep this document self-contained and do not add a circular include.
 - Vite 8, Tailwind CSS v4, shadcn/ui, Radix UI, and Lucide icons.
 - Nitro's `node-server` preset, packaged with Docker and deployed through
   Dokploy. This is not a Next.js, Cloudflare Worker, or Wrangler application.
-- Node 22 in the production image. The built server entry point is
+- Bun 1.3 in the production image. The built server entry point is
   `.output/server/index.mjs`.
 
 Treat `package.json`, `vite.config.ts`, `Dockerfile`, and the running code as
@@ -100,7 +100,7 @@ the source of truth when older prose documentation disagrees.
   explicitly defines it that way.
 - Validate and encode external slugs before constructing URLs. Reuse the
   repository's bounded retry/timeout helpers for idempotent upstream requests.
-- Normal catalogue surfaces collapse reasoning variants; Nerd and detail flows
+- Normal catalogue surfaces collapse reasoning variants; Advanced and detail flows
   may expose the fuller family. Preserve that distinction when changing model
   counts, routing, comparison, or filtering.
 
@@ -110,7 +110,7 @@ the source of truth when older prose documentation disagrees.
   with `MODELS_CACHE_FILE`. `.data/` is local runtime state and is not committed.
 - Dokploy should mount `/app/.data` when cache persistence across redeploys is
   required.
-- The running container refreshes itself through `npm run refresh-cache`, which
+- The running container refreshes itself through `bun run refresh-cache`, which
   sends an authenticated request to `POST /api/cron/refresh` and then checks
   `/api/cron/status`.
 - Keep the refresh endpoint protected by `Authorization: Bearer <CRON_SECRET>`.
@@ -128,7 +128,7 @@ the source of truth when older prose documentation disagrees.
   leave runtime UI partially translated.
 - Reuse `components/ui/`, semantic color tokens, and `cn()` for composition.
   Avoid hard-coded colors when a semantic token already expresses the state.
-- Normal mode is the compact public ranking; Nerd mode is the dense expert
+- Normal mode is the compact public ranking; Advanced mode is the dense expert
   catalogue. Filtering and provider selection must remain consistent across
   both modes without renumbering global ranks after a local filter.
 - Preserve durable URL state for comparisons and other selections users may
@@ -160,21 +160,20 @@ Use the checks proportional to the change, with this full baseline for code or
 data-pipeline work:
 
 ```bash
-npm test
-npm run typecheck
-npm run build
+bun test
+bun run typecheck
+bun run build
 git diff --check
 ```
 
-- Keep Node test files as `*.test.mjs` under `lib/` and include new suites in
-  the `npm test` command.
+- Keep test files as `*.test.mjs` under `lib/`; `bun test` discovers them there.
 - Route or server changes also require a relevant HTTP/SSR smoke test from the
   production build. Data-backed UI claims require a real cache or the deployed
   application; an empty local shell is not proof that production data works.
 - For responsive UI work, perform browser QA in both themes and both languages,
   including a 390 px mobile viewport and keyboard navigation.
-- When dependencies or the lockfile change, validate `npm ci` in the same Node
-  and npm family used by the Docker build.
+- When dependencies or the lockfile change, validate `bun install
+  --frozen-lockfile` in the same Bun family used by the Docker build.
 - Report local source validation, GitHub state, deployment state, cache refresh,
   and public production verification separately. Do not imply a local fix is
   live before it has been published and deployed.

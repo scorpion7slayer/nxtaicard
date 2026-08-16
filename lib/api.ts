@@ -14,7 +14,11 @@ import {
   openRouterCapabilities,
 } from "@/lib/openrouter";
 import { attachOfficialHuggingFaceHints, enrichModelsWithHuggingFace } from "@/lib/huggingface";
-import { fetchAAMediaModels, mergeAAMediaModels } from "@/lib/aa-media";
+import {
+  fetchAAMediaModels,
+  mergeAAMediaDuplicateModels,
+  mergeAAMediaModels,
+} from "@/lib/aa-media";
 import { extractAAAvailabilityStatus, type ModelAvailabilityStatus } from "@/lib/model-availability";
 import {
   extractAACapabilities,
@@ -29,9 +33,11 @@ import {
 import { mergeModelHistory } from "@/lib/model-history";
 import { isExcludedOpenRouterModelId } from "@/lib/openrouter-model-filter";
 import {
+  AA_LEGACY_LANGUAGE_MODELS_ENDPOINT,
   AA_LANGUAGE_MODELS_ENDPOINT,
   AA_LANGUAGE_MODELS_PRO_ENDPOINT,
   collectAAPaginatedData,
+  mergeAALanguageModelSources,
   normaliseAAV2LanguageModels,
   type AAApiEnvelope,
   type AAV2LanguageModel,
@@ -488,11 +494,17 @@ const scrapeModelCapabilities = cached(
 );
 
 async function fetchAALanguageModels(): Promise<LLMModel[]> {
-  const rows = await apiFetchPreferred<AAV2LanguageModel[]>(
-    AA_LANGUAGE_MODELS_ENDPOINT,
-    AA_LANGUAGE_MODELS_PRO_ENDPOINT,
+  const [rows, legacyModels] = await Promise.all([
+    apiFetchPreferred<AAV2LanguageModel[]>(
+      AA_LANGUAGE_MODELS_ENDPOINT,
+      AA_LANGUAGE_MODELS_PRO_ENDPOINT,
+    ),
+    apiFetch<LLMModel[]>(AA_LEGACY_LANGUAGE_MODELS_ENDPOINT).catch(() => []),
+  ]);
+  return mergeAALanguageModelSources(
+    normaliseAAV2LanguageModels(rows),
+    legacyModels,
   );
-  return normaliseAAV2LanguageModels(rows);
 }
 
 /**
@@ -661,7 +673,11 @@ export async function refreshModelsCache(): Promise<{ count: number; stats: Cron
   const previousModels = previous
     ? normaliseCatalogModels(previous.models)
     : [];
-  const mergedCatalog = mergeModelHistory(freshModels, previousModels);
+  const mergedCatalog = mergeModelHistory(
+    freshModels,
+    previousModels,
+    mergeHistoricalModelData,
+  );
   const models = normaliseCatalogModels(mergedCatalog.models);
   const completeStats: CronFetchStats = {
     ...stats,
@@ -672,6 +688,22 @@ export async function refreshModelsCache(): Promise<{ count: number; stats: Cron
   await writeModelsCache(models, completeStats);
   if (models.length > 0) lastSuccessfulModels = models;
   return { count: models.length, stats: completeStats };
+}
+
+function mergeHistoricalModelData(
+  fresh: LLMModel,
+  previous: LLMModel,
+): LLMModel {
+  const merged = mergeDefinedModel(previous, fresh);
+  return {
+    ...merged,
+    id: fresh.id,
+    name: fresh.name,
+    slug: fresh.slug,
+    model_creator: fresh.model_creator,
+    evaluations: mergeDefinedModel(previous.evaluations, fresh.evaluations),
+    pricing: mergeDefinedModel(previous.pricing, fresh.pricing),
+  };
 }
 
 /**
@@ -701,7 +733,9 @@ function removeExcludedOpenRouterModels(models: LLMModel[]): LLMModel[] {
 
 function normaliseCatalogModels(models: LLMModel[]): LLMModel[] {
   return dedupeOpenRouterVariantModels(
-    normaliseCreatorNames(removeExcludedOpenRouterModels(models)),
+    normaliseCreatorNames(
+      mergeAAMediaDuplicateModels(removeExcludedOpenRouterModels(models)),
+    ),
   );
 }
 
@@ -769,7 +803,7 @@ async function chunkedScrape(
   return results;
 }
 
-function mergeDefinedModel(model: LLMModel, patch: Partial<LLMModel>): LLMModel {
+function mergeDefinedModel<T extends object>(model: T, patch: Partial<T>): T {
   const next = { ...model };
   for (const [key, value] of Object.entries(patch)) {
     if (value !== undefined && (value !== null || key === "availability_status")) {

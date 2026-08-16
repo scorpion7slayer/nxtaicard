@@ -54,6 +54,10 @@ const CREATOR_TO_PROVIDER: Record<string, string> = {
   upstage: "upstage",
   longcat: "longcat",
   lg: "lg",
+  "lg-ai-research": "lg",
+  voyage: "voyage",
+  voyageai: "voyage",
+  "voyage-ai": "voyage",
   groq: "groq",
   "microsoft-ai": "microsoft",
 
@@ -116,6 +120,9 @@ const CREATOR_TO_PROVIDER: Record<string, string> = {
 };
 
 const CREATOR_CANONICAL_SLUG: Record<string, string> = {
+  "lg-ai-research": "lg",
+  "voyage-ai": "voyage",
+  voyageai: "voyage",
   "z-ai": "zai",
   zhipu: "zai",
 };
@@ -212,6 +219,7 @@ const CREATOR_DISPLAY_NAME: Record<string, string> = {
   "tii-uae": "TII",
   "nous-research": "Nous Research",
   "reka-ai": "Reka AI",
+  voyage: "Voyage AI",
 };
 
 /** Returns the canonical display name for a creator, falling back to the API name. */
