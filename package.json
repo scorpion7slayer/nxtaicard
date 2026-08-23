@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@lobehub/icons": "^5.10.0",
+    "@lobehub/icons": "^5.16.0",
     "@tanstack/react-router": "^1.135.0",
     "@tanstack/react-router-devtools": "^1.135.0",
     "@tanstack/react-start": "^1.135.0",
